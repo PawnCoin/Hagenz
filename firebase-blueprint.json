@@ -9,9 +9,22 @@
         "name": { "type": "string", "description": "The name of the product." },
         "description": { "type": "string", "description": "A detailed description of the product." },
         "price": { "type": "number", "description": "The price of the product in USD." },
+        "discountPrice": { "type": "number", "description": "Optional sale price." },
         "image": { "type": "string", "description": "The URL of the product image." },
         "category": { "type": "string", "description": "The category the product belongs to." },
+        "videoUrl": { "type": "string", "description": "Optional URL for a product video." },
         "stock": { "type": "integer", "description": "The current stock level." },
+        "specifications": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": { "type": "string" },
+              "value": { "type": "string" }
+            }
+          },
+          "description": "Technical specifications for the product."
+        },
         "variants": {
           "type": "array",
           "items": {
@@ -68,7 +81,23 @@
         "uid": { "type": "string" },
         "name": { "type": "string" },
         "email": { "type": "string", "format": "email" },
-        "role": { "type": "string", "enum": ["admin", "customer"] }
+        "role": { "type": "string", "enum": ["admin", "customer"] },
+        "savedAddresses": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "fullName": { "type": "string" },
+              "address": { "type": "string" },
+              "city": { "type": "string" },
+              "zipCode": { "type": "string" },
+              "country": { "type": "string" },
+              "isDefault": { "type": "boolean" }
+            }
+          },
+          "description": "A list of saved shipping addresses for the user."
+        }
       },
       "required": ["uid", "email", "role"]
     },

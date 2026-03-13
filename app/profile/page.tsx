@@ -13,8 +13,20 @@ export default function ProfilePage() {
   const { user, profile, loading: authLoading, updateUserProfile } = useAuth();
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'orders' | 'settings'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'settings' | 'addresses'>('orders');
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  
+  // Addresses state
+  const [isAddingAddress, setIsAddingAddress] = useState(false);
+  const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
+  const [addressForm, setAddressForm] = useState({
+    fullName: '',
+    address: '',
+    city: '',
+    zipCode: '',
+    country: '',
+    isDefault: false
+  });
   
   // Settings form state
   const [name, setName] = useState(profile?.name || '');
@@ -39,6 +51,66 @@ export default function ProfilePage() {
       setUpdateMessage({ text: 'Failed to update profile.', type: 'error' });
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  const handleSaveAddress = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsUpdating(true);
+    try {
+      const currentAddresses = profile?.savedAddresses || [];
+      let newAddresses;
+      
+      if (editingAddressId) {
+        newAddresses = currentAddresses.map((addr: any) => 
+          addr.id === editingAddressId ? { ...addr, ...addressForm } : addr
+        );
+      } else {
+        const newAddress = {
+          ...addressForm,
+          id: Math.random().toString(36).substr(2, 9)
+        };
+        newAddresses = [...currentAddresses, newAddress];
+      }
+
+      // If this is set as default, unset others
+      if (addressForm.isDefault) {
+        newAddresses = newAddresses.map((addr: any) => ({
+          ...addr,
+          isDefault: addr.id === (editingAddressId || newAddresses[newAddresses.length - 1].id)
+        }));
+      }
+
+      await updateUserProfile({ savedAddresses: newAddresses });
+      setIsAddingAddress(false);
+      setEditingAddressId(null);
+      setAddressForm({ fullName: '', address: '', city: '', zipCode: '', country: '', isDefault: false });
+    } catch (error) {
+      console.error('Error saving address:', error);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleDeleteAddress = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this address?')) return;
+    try {
+      const newAddresses = (profile?.savedAddresses || []).filter((addr: any) => addr.id !== id);
+      await updateUserProfile({ savedAddresses: newAddresses });
+    } catch (error) {
+      console.error('Error deleting address:', error);
+    }
+  };
+
+  const handleSetDefaultAddress = async (id: string) => {
+    try {
+      const newAddresses = (profile?.savedAddresses || []).map((addr: any) => ({
+        ...addr,
+        isDefault: addr.id === id
+      }));
+      await updateUserProfile({ savedAddresses: newAddresses });
+    } catch (error) {
+      console.error('Error setting default address:', error);
     }
   };
 
@@ -118,6 +190,12 @@ export default function ProfilePage() {
                   className={`w-full text-left px-4 py-3 rounded-md font-bold text-[10px] uppercase tracking-[0.2em] transition-all font-mono ${activeTab === 'orders' ? 'bg-black text-white shadow-lg' : 'text-gray-500 hover:bg-gray-50'}`}
                 >
                   Acquisition Logs
+                </button>
+                <button 
+                  onClick={() => { setActiveTab('addresses'); setSelectedOrder(null); }}
+                  className={`w-full text-left px-4 py-3 rounded-md font-bold text-[10px] uppercase tracking-[0.2em] transition-all font-mono ${activeTab === 'addresses' ? 'bg-black text-white shadow-lg' : 'text-gray-500 hover:bg-gray-50'}`}
+                >
+                  Delivery Nodes
                 </button>
                 <button 
                   onClick={() => { setActiveTab('settings'); setSelectedOrder(null); }}
@@ -290,6 +368,157 @@ export default function ProfilePage() {
                     </div>
                   )}
                 </>
+              ) : activeTab === 'addresses' ? (
+                <div className="space-y-8">
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-2xl font-black font-display uppercase tracking-tight">Delivery Nodes</h2>
+                    <button 
+                      onClick={() => {
+                        setIsAddingAddress(true);
+                        setEditingAddressId(null);
+                        setAddressForm({ fullName: '', address: '', city: '', zipCode: '', country: '', isDefault: false });
+                      }}
+                      className="bg-black text-white px-6 py-3 rounded-md font-bold text-[10px] uppercase tracking-widest font-mono shadow-lg hover:bg-indigo-600 transition-all"
+                    >
+                      Add New Node
+                    </button>
+                  </div>
+
+                  {isAddingAddress || editingAddressId ? (
+                    <form onSubmit={handleSaveAddress} className="bg-gray-50 p-8 rounded-2xl border border-gray-100 space-y-6">
+                      <h3 className="text-[10px] font-bold uppercase tracking-widest text-gray-400 font-mono">
+                        {editingAddressId ? 'Edit Node Configuration' : 'New Node Configuration'}
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="md:col-span-2">
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 block mb-2 font-mono">Full Name</label>
+                          <input 
+                            type="text" 
+                            value={addressForm.fullName}
+                            onChange={(e) => setAddressForm({ ...addressForm, fullName: e.target.value })}
+                            className="w-full px-4 py-3 bg-white border border-gray-100 rounded-md focus:border-black outline-none font-mono text-sm"
+                            required
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 block mb-2 font-mono">Address</label>
+                          <input 
+                            type="text" 
+                            value={addressForm.address}
+                            onChange={(e) => setAddressForm({ ...addressForm, address: e.target.value })}
+                            className="w-full px-4 py-3 bg-white border border-gray-100 rounded-md focus:border-black outline-none font-mono text-sm"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 block mb-2 font-mono">City</label>
+                          <input 
+                            type="text" 
+                            value={addressForm.city}
+                            onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
+                            className="w-full px-4 py-3 bg-white border border-gray-100 rounded-md focus:border-black outline-none font-mono text-sm"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 block mb-2 font-mono">Zip Code</label>
+                          <input 
+                            type="text" 
+                            value={addressForm.zipCode}
+                            onChange={(e) => setAddressForm({ ...addressForm, zipCode: e.target.value })}
+                            className="w-full px-4 py-3 bg-white border border-gray-100 rounded-md focus:border-black outline-none font-mono text-sm"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 block mb-2 font-mono">Country</label>
+                          <input 
+                            type="text" 
+                            value={addressForm.country}
+                            onChange={(e) => setAddressForm({ ...addressForm, country: e.target.value })}
+                            className="w-full px-4 py-3 bg-white border border-gray-100 rounded-md focus:border-black outline-none font-mono text-sm"
+                            required
+                          />
+                        </div>
+                        <div className="flex items-center space-x-3 pt-6">
+                          <input 
+                            type="checkbox" 
+                            id="isDefault"
+                            checked={addressForm.isDefault}
+                            onChange={(e) => setAddressForm({ ...addressForm, isDefault: e.target.checked })}
+                            className="w-4 h-4 border-gray-300 rounded text-black focus:ring-black"
+                          />
+                          <label htmlFor="isDefault" className="text-[10px] font-bold uppercase tracking-widest text-gray-400 font-mono cursor-pointer">Set as Primary Node</label>
+                        </div>
+                      </div>
+                      <div className="flex space-x-4 pt-4">
+                        <button 
+                          type="submit"
+                          disabled={isUpdating}
+                          className="flex-1 bg-black text-white py-4 rounded-md font-bold text-[10px] uppercase tracking-[0.2em] hover:bg-indigo-600 transition-all font-mono"
+                        >
+                          {isUpdating ? 'Synchronising...' : 'Save Configuration'}
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => { setIsAddingAddress(false); setEditingAddressId(null); }}
+                          className="px-8 py-4 border border-gray-200 rounded-md font-bold text-[10px] uppercase tracking-[0.2em] hover:bg-gray-100 transition-all font-mono"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  ) : profile?.savedAddresses?.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {profile.savedAddresses.map((addr: any) => (
+                        <div key={addr.id} className={`p-6 rounded-2xl border transition-all ${addr.isDefault ? 'border-indigo-600 bg-indigo-50/30' : 'border-gray-100 bg-white hover:border-gray-300'}`}>
+                          <div className="flex justify-between items-start mb-4">
+                            <div>
+                              <p className="text-xs font-bold uppercase tracking-tight">{addr.fullName}</p>
+                              {addr.isDefault && (
+                                <span className="text-[8px] font-bold uppercase tracking-widest bg-indigo-600 text-white px-2 py-0.5 rounded-full font-mono mt-1 inline-block">Primary Node</span>
+                              )}
+                            </div>
+                            <div className="flex space-x-2">
+                              <button 
+                                onClick={() => {
+                                  setEditingAddressId(addr.id);
+                                  setAddressForm({ ...addr });
+                                }}
+                                className="text-[9px] font-bold uppercase tracking-widest text-gray-400 hover:text-black font-mono"
+                              >
+                                Edit
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteAddress(addr.id)}
+                                className="text-[9px] font-bold uppercase tracking-widest text-rose-400 hover:text-rose-600 font-mono"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </div>
+                          <p className="text-[11px] text-gray-500 font-mono uppercase leading-relaxed">
+                            {addr.address}<br />
+                            {addr.city}, {addr.zipCode}<br />
+                            {addr.country}
+                          </p>
+                          {!addr.isDefault && (
+                            <button 
+                              onClick={() => handleSetDefaultAddress(addr.id)}
+                              className="mt-4 text-[9px] font-bold uppercase tracking-widest text-indigo-600 hover:underline font-mono"
+                            >
+                              Set as Primary
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                      <p className="text-gray-400 font-mono text-[10px] uppercase tracking-widest">No delivery nodes registered in database.</p>
+                    </div>
+                  )}
+                </div>
               ) : (
                 <>
                   <h2 className="text-2xl font-black font-display uppercase tracking-tight mb-8">Node Settings</h2>

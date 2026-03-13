@@ -34,7 +34,7 @@ export default function CheckoutPage() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [orderId, setOrderId] = useState('');
 
-  const { register, handleSubmit, formState: { errors, isValid } } = useForm<CheckoutFormData>({
+  const { register, handleSubmit, setValue, formState: { errors, isValid }, watch } = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutSchema),
     mode: 'onChange',
     defaultValues: {
@@ -43,11 +43,38 @@ export default function CheckoutPage() {
     }
   });
 
+  const { profile, updateUserProfile } = useAuth();
+  const [saveAddress, setSaveAddress] = useState(false);
+
+  const handleSelectAddress = (address: any) => {
+    setValue('fullName', address.fullName, { shouldValidate: true });
+    setValue('address', address.address, { shouldValidate: true });
+    setValue('city', address.city, { shouldValidate: true });
+    setValue('zipCode', address.zipCode, { shouldValidate: true });
+    setValue('country', address.country, { shouldValidate: true });
+  };
+
   const onPaymentSuccess = async () => {
     // This will be called by PcPayButton after mock payment
     await handleSubmit(async (data) => {
       setIsSubmitting(true);
       try {
+        // Save address if requested
+        if (saveAddress && profile) {
+          const newAddress = {
+            id: crypto.randomUUID(),
+            fullName: data.fullName,
+            address: data.address,
+            city: data.city,
+            zipCode: data.zipCode,
+            country: data.country,
+            isDefault: (profile.savedAddresses || []).length === 0
+          };
+          
+          const updatedAddresses = [...(profile.savedAddresses || []), newAddress];
+          await updateUserProfile({ savedAddresses: updatedAddresses });
+        }
+
         const orderData = {
           userId: user?.uid || 'anonymous',
           walletAddress,
@@ -129,7 +156,23 @@ export default function CheckoutPage() {
           <div className="lg:col-span-8 space-y-10">
             {/* Shipping Info */}
             <div className="bg-white rounded-[2rem] p-10 shadow-sm border border-stone-100">
-              <h2 className="text-2xl font-bold text-stone-900 mb-8 font-display uppercase tracking-tight">Shipping Information</h2>
+              <div className="flex items-center justify-between mb-8">
+                <h2 className="text-2xl font-bold text-stone-900 font-display uppercase tracking-tight">Shipping Information</h2>
+                {profile?.savedAddresses && profile.savedAddresses.length > 0 && (
+                  <div className="flex space-x-2 overflow-x-auto pb-2 max-w-[50%] custom-scrollbar">
+                    {profile.savedAddresses.map((addr: any) => (
+                      <button
+                        key={addr.id}
+                        type="button"
+                        onClick={() => handleSelectAddress(addr)}
+                        className="flex-shrink-0 px-4 py-2 rounded-full border border-stone-200 bg-stone-50 text-[10px] font-bold uppercase tracking-widest text-stone-500 hover:border-stone-900 hover:text-stone-900 transition-all"
+                      >
+                        {addr.fullName.split(' ')[0]}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-3">
                   <label className="text-[11px] font-bold uppercase tracking-widest text-stone-400">Full Name</label>
@@ -185,6 +228,19 @@ export default function CheckoutPage() {
                   />
                   {errors.country && <p className="text-[10px] text-rose-500 font-bold uppercase tracking-widest mt-1">{errors.country.message}</p>}
                 </div>
+
+                {user && (
+                  <div className="md:col-span-2 flex items-center space-x-3 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => setSaveAddress(!saveAddress)}
+                      className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${saveAddress ? 'bg-stone-900 border-stone-900' : 'border-stone-200'}`}
+                    >
+                      {saveAddress && <CheckCircle2 size={14} className="text-white" />}
+                    </button>
+                    <span className="text-[11px] font-bold uppercase tracking-widest text-stone-500">Save this address to my profile</span>
+                  </div>
+                )}
               </div>
             </div>
 

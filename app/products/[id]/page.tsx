@@ -144,9 +144,16 @@ export default function ProductDetailPage() {
                 <span className="text-[11px] text-stone-400 font-bold uppercase tracking-widest">4.8 Rating (48 Reviews)</span>
               </div>
               <div className="flex items-baseline space-x-6 mb-8">
-                <p className="text-4xl font-bold text-stone-900 tracking-tight">${product.price}</p>
+                {product.discountPrice ? (
+                  <>
+                    <p className="text-4xl font-bold text-rose-600 tracking-tight">${product.discountPrice}</p>
+                    <p className="text-xl text-stone-400 line-through tracking-tight">${product.price}</p>
+                  </>
+                ) : (
+                  <p className="text-4xl font-bold text-stone-900 tracking-tight">${product.price}</p>
+                )}
                 <div className="flex items-center space-x-2 bg-stone-50 px-4 py-2 rounded-full border border-stone-200">
-                  <span className="text-sm font-bold text-stone-400 uppercase tracking-widest">{(product.price / 0.85).toFixed(2)} $Pc</span>
+                  <span className="text-sm font-bold text-stone-400 uppercase tracking-widest">{( (product.discountPrice || product.price) / 0.85).toFixed(2)} $Pc</span>
                 </div>
               </div>
             </div>
@@ -157,6 +164,20 @@ export default function ProductDetailPage() {
                 {product.description}
               </p>
             </div>
+
+            {/* Video Support */}
+            {product.videoUrl && (
+              <div className="mb-12">
+                <h3 className="text-[11px] font-bold uppercase tracking-widest text-stone-400 mb-4">Product Video</h3>
+                <div className="aspect-video rounded-3xl overflow-hidden border border-stone-200 shadow-sm bg-black">
+                  <video 
+                    src={product.videoUrl} 
+                    controls 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Variants */}
             {product.variants && product.variants.length > 0 && (
@@ -217,7 +238,10 @@ export default function ProductDetailPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-10 border-t border-stone-100">
                 <div className="flex items-center space-x-3 text-[10px] font-bold uppercase tracking-widest text-stone-400">
                   <Truck size={18} className="text-stone-900" />
-                  <span>Worldwide Shipping</span>
+                  <div className="flex flex-col">
+                    <span>Worldwide Shipping</span>
+                    <span className="text-[8px] text-stone-500">Est. Delivery: 3-5 Days</span>
+                  </div>
                 </div>
                 <div className="flex items-center space-x-3 text-[10px] font-bold uppercase tracking-widest text-stone-400">
                   <RotateCcw size={18} className="text-stone-900" />
@@ -225,7 +249,10 @@ export default function ProductDetailPage() {
                 </div>
                 <div className="flex items-center space-x-3 text-[10px] font-bold uppercase tracking-widest text-stone-400">
                   <Shield size={18} className="text-stone-900" />
-                  <span>Secure Payment</span>
+                  <div className="flex flex-col">
+                    <span>Secure Payment</span>
+                    <span className="text-[8px] text-stone-500">2-Year Warranty Incl.</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -240,13 +267,13 @@ export default function ProductDetailPage() {
                 <div className="mt-6 overflow-hidden rounded-3xl border border-stone-100">
                   <table className="w-full text-[11px] text-left">
                     <tbody className="divide-y divide-stone-100">
-                      {[
+                      {(product.specifications || [
                         { label: 'Origin', value: 'Local Artisans' },
                         { label: 'Material', value: 'Organic & Sustainable' },
                         { label: 'Weight', value: '0.85 kg' },
                         { label: 'Care', value: 'Handcrafted with love' },
                         { label: 'Warranty', value: 'Quality Guaranteed' }
-                      ].map((spec, i) => (
+                      ]).map((spec: any, i: number) => (
                         <tr key={i} className={i % 2 === 0 ? 'bg-stone-50/30' : 'bg-white'}>
                           <td className="px-6 py-4 font-bold text-stone-900 w-1/3 uppercase tracking-widest">{spec.label}</td>
                           <td className="px-6 py-4 text-stone-500 uppercase tracking-widest">{spec.value}</td>

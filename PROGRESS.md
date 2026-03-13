@@ -18,35 +18,35 @@ This document tracks the development progress of the Luster Store e-commerce pla
 - [x] **Category Pages**: (Smartphones, Tablets, Laptops, etc.)
 - [x] **Product Filters**: Price, Brand, Storage, Color, etc.
 - [x] **Sorting**: Sort by price, newest, popularity.
-- [ ] **Pagination**: Handling large product catalogs.
+- [x] **Pagination**: Handling large product catalogs.
 - [x] **Product Grid**: Responsive layout for browsing.
 - [x] **Quick View**: Modal for fast product preview (Implemented via AI Assistant and Product Cards).
 
 ## 📦 Product Page Layout
 - [x] **Product Images Gallery**: Basic gallery implemented.
 - [ ] **3D Product Viewer**: (Optional advanced feature)
-- [ ] **Product Video**: Support for video embeds.
+- [x] **Product Video**: Support for video embeds.
 - [x] **Price**: Standard pricing.
-- [ ] **Discount Price**: Sale price display.
+- [x] **Discount Price**: Sale price display.
 - [x] **Stock Availability**: Basic stock tracking.
 - [x] **Variants**: Color, storage size, etc.
-- [ ] **Specifications**: Technical data table.
+- [x] **Specifications**: Technical data table.
 - [x] **Description**: Rich text product details.
 - [x] **Reviews**: Customer feedback system.
 - [ ] **Q&A Section**: Community questions.
 - [x] **Add to Cart**: Functional cart integration.
-- [ ] **Buy Now**: Direct checkout from product page.
+- [x] **Buy Now**: Direct checkout from product page.
 - [x] **Wishlist**: Save items for later.
 - [ ] **Compare Product**: Side-by-side comparison tool.
-- [ ] **Estimated Delivery**: Shipping time estimates.
+- [x] **Estimated Delivery**: Shipping time estimates.
 - [ ] **Financing Options**: Monthly payment info.
-- [ ] **Warranty Options**: Protection plans.
+- [x] **Warranty Options**: Protection plans.
 - [ ] **Recommended Accessories**: Cross-sell items.
 
 ## 👤 Customer Account Pages
 - [x] **Account Dashboard**: Basic profile view.
 - [x] **Profile Settings**: Edit name, email, avatar.
-- [ ] **Saved Addresses**: Manage multiple shipping locations.
+- [x] **Saved Addresses**: Manage multiple shipping locations.
 - [ ] **Payment Methods**: Save cards for faster checkout.
 - [x] **Order History**: List of past purchases.
 - [x] **Track Orders**: Real-time status tracking.
@@ -81,7 +81,7 @@ This document tracks the development progress of the Luster Store e-commerce pla
 
 ## 🔍 Default Ecommerce Functions
 - [x] **Add to Cart**: Core shopping function.
-- [ ] **Buy Now**: Instant checkout.
+- [x] **Buy Now**: Instant checkout.
 - [ ] **Save for Later**: Move from cart to wishlist.
 - [x] **Wishlist**: Save for future purchase.
 - [ ] **Product Comparison**: Compare specs.
@@ -136,6 +136,11 @@ This document tracks the development progress of the Luster Store e-commerce pla
 - [ ] **Multi-Warehouse Shipping**: Logistics optimization.
 - [ ] **Global Currency & Language**: International support.
 - [ ] **Marketplace Sellers**: Third-party seller support.
+
+## 🔌 Shopify & Third-Party Integrations
+- [ ] **Shopify App Compatibility**: Middleware layer for Shopify-like app integration.
+- [ ] **Webhook Support**: Support for external service notifications.
+- [ ] **Storefront API**: Headless-ready API endpoints.
 
 ## 📂 Legal Pages
 - [x] **Privacy Policy**: Data usage.

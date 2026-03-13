@@ -15,6 +15,7 @@ interface ProductCardProps {
     id: string;
     name: string;
     price: number;
+    discountPrice?: number;
     image: string;
     category: string;
   };
@@ -70,9 +71,18 @@ export default function ProductCard({ product }: ProductCardProps) {
         </button>
         <button
           onClick={() => addToCart(product)}
-          className="absolute bottom-4 right-4 bg-stone-900 text-white p-4 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 hover:bg-stone-700"
+          className="absolute bottom-4 right-4 bg-stone-900 text-white p-4 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 hover:bg-stone-700 z-10"
         >
           <Plus size={20} />
+        </button>
+        <button
+          onClick={() => {
+            addToCart(product);
+            window.location.href = '/checkout';
+          }}
+          className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-md text-stone-900 px-4 py-3 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 hover:bg-stone-900 hover:text-white font-bold text-[10px] uppercase tracking-widest border border-stone-100"
+        >
+          Buy Now
         </button>
       </div>
       <div className="mt-6 flex justify-between items-start px-1">
@@ -86,12 +96,21 @@ export default function ProductCard({ product }: ProductCardProps) {
             </Link>
           </h3>
         </div>
-        <p className="text-sm font-bold text-stone-900">${product.price}</p>
+        <div className="text-right">
+          {product.discountPrice ? (
+            <>
+              <p className="text-sm font-bold text-rose-600">${product.discountPrice}</p>
+              <p className="text-[10px] text-stone-400 line-through">${product.price}</p>
+            </>
+          ) : (
+            <p className="text-sm font-bold text-stone-900">${product.price}</p>
+          )}
+        </div>
       </div>
       <div className="mt-3 flex items-center space-x-2 opacity-60">
         <div className="flex items-center space-x-1.5 bg-stone-100 px-2 py-0.5 rounded-full border border-stone-200">
           <Coins size={10} className="text-stone-500" />
-          <span className="text-[10px] font-bold text-stone-500">{(product.price / 0.85).toFixed(2)} $Pc</span>
+          <span className="text-[10px] font-bold text-stone-500">{( (product.discountPrice || product.price) / 0.85).toFixed(2)} $Pc</span>
         </div>
       </div>
       <QuickView 

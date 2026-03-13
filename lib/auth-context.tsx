@@ -11,7 +11,7 @@ interface AuthContextType {
   loading: boolean;
   login: () => Promise<void>;
   logout: () => Promise<void>;
-  updateUserProfile: (data: { name?: string; photoURL?: string }) => Promise<void>;
+  updateUserProfile: (data: any) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -35,6 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             email: user.email,
             name: user.displayName,
             role: 'customer',
+            savedAddresses: []
           };
           await setDoc(doc(db, 'users', user.uid), newProfile);
           setProfile(newProfile);
@@ -57,21 +58,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await signOut(auth);
   };
 
-  const updateUserProfile = async (data: { name?: string; photoURL?: string }) => {
+  const updateUserProfile = async (data: any) => {
     if (!auth.currentUser) return;
 
-    // Update Firebase Auth
-    await updateProfile(auth.currentUser, {
-      displayName: data.name,
-      photoURL: data.photoURL
-    });
+    // Update Firebase Auth if name or photoURL is provided
+    if (data.name || data.photoURL) {
+      await updateProfile(auth.currentUser, {
+        displayName: data.name,
+        photoURL: data.photoURL
+      });
+    }
 
     // Update Firestore
     const userRef = doc(db, 'users', auth.currentUser.uid);
-    await updateDoc(userRef, {
-      name: data.name,
-      photoURL: data.photoURL
-    });
+    await updateDoc(userRef, data);
 
     // Update local state
     setProfile((prev: any) => ({ ...prev, ...data }));
