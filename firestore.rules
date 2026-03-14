@@ -1,4 +1,16 @@
 rules_version = '2';
+// Notification Validators
+function isValidNotification(data) {
+  return hasOnlyAllowedFields(['userId', 'title', 'message', 'type', 'link', 'read', 'createdAt']) &&
+         data.userId is string && data.userId.size() > 0 &&
+         data.title is string && data.title.size() > 0 && data.title.size() < 100 &&
+         data.message is string && data.message.size() > 0 && data.message.size() < 500 &&
+         data.type in ['order', 'ticket', 'system', 'reward'] &&
+         (!('link' in data) || (data.link is string && data.link.size() < 200)) &&
+         data.read is bool &&
+         data.createdAt is timestamp;
+}
+
 service cloud.firestore {
   match /databases/{database}/documents {
     // ===============================================================
@@ -51,6 +63,27 @@ service cloud.firestore {
     //   - productId: string (required)
     //   - createdAt: timestamp (required)
     //
+    // Collection: tickets
+    // Document ID: ticketId
+    // Fields:
+    //   - userId: string (required, matches auth.uid)
+    //   - subject: string (required)
+    //   - message: string (required)
+    //   - status: string (required, enum: open, in-progress, closed)
+    //   - priority: string (required, enum: low, medium, high, critical)
+    //   - category: string (required, enum: order, payment, technical, other)
+    //   - createdAt: timestamp (required)
+    //
+    // Collection: returns
+    // Document ID: returnId
+    // Fields:
+    //   - orderId: string (required)
+    //   - userId: string (required, matches auth.uid)
+    //   - items: list (required)
+    //   - reason: string (required)
+    //   - status: string (required, enum: pending, approved, rejected, completed)
+    //   - createdAt: timestamp (required)
+    //
     // ===============================================================
 
     // ===============================================================
@@ -101,7 +134,10 @@ service cloud.firestore {
              data.userId == request.auth.uid &&
              data.items is list && data.items.size() > 0 &&
              data.total is number && data.total > 0 &&
-             data.status in ['pending', 'processing', 'shipped', 'delivered'] &&
+             (!('tax' in data) || data.tax is number) &&
+             (!('shippingCost' in data) || data.shippingCost is number) &&
+             (!('notes' in data) || data.notes is string) &&
+             data.status in ['pending', 'processing', 'shipped', 'delivered', 'paid'] &&
              data.shippingAddress is map &&
              data.shippingAddress.keys().hasAll(['fullName', 'address', 'city', 'zipCode', 'country']) &&
              data.createdAt is timestamp;
@@ -113,6 +149,9 @@ service cloud.firestore {
              isValidEmail(data.email) &&
              data.role in ['admin', 'customer'] &&
              (!('name' in data) || data.name is string) &&
+             (!('loyaltyTier' in data) || data.loyaltyTier in ['Bronze', 'Silver', 'Gold', 'Platinum']) &&
+             (!('pcBalance' in data) || data.pcBalance is number) &&
+             (!('walletAddress' in data) || data.walletAddress is string) &&
              (!('savedAddresses' in data) || data.savedAddresses is list);
     }
 
@@ -133,9 +172,51 @@ service cloud.firestore {
              data.createdAt is timestamp;
     }
 
-    // ===============================================================
-    // Rules
-    // ===============================================================
+    function isValidTicket(data) {
+      return data.keys().hasAll(['userId', 'subject', 'message', 'status', 'priority', 'category', 'createdAt']) &&
+             data.userId == request.auth.uid &&
+             data.subject is string && data.subject.size() > 0 && data.subject.size() < 200 &&
+             data.message is string && data.message.size() > 0 && data.message.size() < 5000 &&
+             data.status in ['open', 'in-progress', 'closed'] &&
+             data.priority in ['low', 'medium', 'high', 'critical'] &&
+             data.category in ['order', 'payment', 'technical', 'other'] &&
+             data.createdAt is timestamp &&
+             (!('responses' in data) || data.responses is list);
+    }
+
+    function isValidReturn(data) {
+      return data.keys().hasAll(['orderId', 'userId', 'items', 'reason', 'status', 'createdAt']) &&
+             data.orderId is string &&
+             data.userId == request.auth.uid &&
+             data.items is list && data.items.size() > 0 &&
+             data.reason is string && data.reason.size() >= 10 &&
+             data.status in ['pending', 'approved', 'rejected', 'completed'] &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidNotification(data) {
+      return data.keys().hasAll(['userId', 'title', 'message', 'type', 'read', 'createdAt']) &&
+             data.userId is string &&
+             data.title is string && data.title.size() > 0 &&
+             data.message is string && data.message.size() > 0 &&
+             data.type in ['order', 'ticket', 'system', 'reward'] &&
+             data.read is bool &&
+             data.createdAt is timestamp;
+     }
+ 
+     function isValidGiftCard(data) {
+       return data.keys().hasAll(['code', 'initialBalance', 'currentBalance', 'isActive', 'createdAt']) &&
+              data.code is string && data.code.size() == 16 &&
+              data.initialBalance is number && data.initialBalance > 0 &&
+              data.currentBalance is number && data.currentBalance >= 0 &&
+              data.isActive is bool &&
+              data.createdAt is timestamp &&
+              (!('expiryDate' in data) || data.expiryDate is timestamp);
+     }
+ 
+     // ===============================================================
+     // Rules
+     // ===============================================================
 
     match /products/{productId} {
       allow read: if true; // Publicly readable
@@ -173,6 +254,41 @@ service cloud.firestore {
     match /coupons/{couponId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
+    }
+
+    match /tickets/{ticketId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && isValidTicket(request.resource.data);
+      allow update: if isAuthenticated() && (
+        (resource.data.userId == request.auth.uid && isValidTicket(request.resource.data) && request.resource.data.status == resource.data.status) || 
+        isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /returns/{returnId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && isValidReturn(request.resource.data);
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAdmin();
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && 
+                    request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    match /giftcards/{giftcardId} {
+      allow read: if isAuthenticated(); // Anyone can check a gift card balance if they have the ID
+      allow create: if isAuthenticated() && isValidGiftCard(request.resource.data);
+      allow update: if isAuthenticated() && (
+        isAdmin() || 
+        (isValidGiftCard(request.resource.data) && request.resource.data.code == resource.data.code)
+      );
+      allow delete: if isAdmin();
     }
   }
 }

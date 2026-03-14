@@ -7,6 +7,7 @@ import { useCart } from '@/lib/cart-context';
 import { useAuth } from '@/lib/auth-context';
 import { useCrypto } from '@/lib/crypto-context';
 import { motion, AnimatePresence } from 'motion/react';
+import NotificationBell from './NotificationBell';
 
 export default function Navbar() {
   const { totalItems } = useCart();
@@ -82,6 +83,7 @@ export default function Navbar() {
             
             {user ? (
               <div className="flex items-center space-x-4">
+                <NotificationBell />
                 <button 
                   onClick={() => logout()}
                   className="text-[11px] font-bold text-stone-400 hover:text-rose-500 transition-colors uppercase tracking-widest"

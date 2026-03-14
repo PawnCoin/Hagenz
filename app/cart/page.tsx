@@ -11,7 +11,17 @@ import { db } from '@/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 
 export default function CartPage() {
-  const { items, updateQuantity, removeFromCart, totalPrice, totalItems } = useCart();
+  const { 
+    items, 
+    savedItems, 
+    updateQuantity, 
+    removeFromCart, 
+    saveForLater, 
+    moveToCart, 
+    removeFromSaved, 
+    totalPrice, 
+    totalItems 
+  } = useCart();
   const { usdcToPc } = useCrypto();
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
@@ -129,111 +139,159 @@ export default function CartPage() {
                         <Trash2 size={20} />
                       </button>
                     </div>
-                    <div className="flex items-center mt-6 space-x-6">
-                      <div className="flex items-center border-2 border-stone-100 rounded-full px-4 py-1.5">
+                      <div className="flex items-center mt-6 space-x-6">
+                        <div className="flex items-center border-2 border-stone-100 rounded-full px-4 py-1.5">
+                          <button 
+                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            className="p-1 text-stone-400 hover:text-stone-900 transition-colors"
+                          >
+                            <Minus size={16} />
+                          </button>
+                          <span className="w-10 text-center text-sm font-bold text-stone-900">{item.quantity}</span>
+                          <button 
+                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            className="p-1 text-stone-400 hover:text-stone-900 transition-colors"
+                          >
+                            <Plus size={16} />
+                          </button>
+                        </div>
                         <button 
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                          className="p-1 text-stone-400 hover:text-stone-900 transition-colors"
+                          onClick={() => saveForLater(item.id)}
+                          className="text-[10px] font-bold text-stone-400 hover:text-stone-900 uppercase tracking-widest transition-colors"
                         >
-                          <Minus size={16} />
+                          Save for Later
                         </button>
-                        <span className="w-10 text-center text-sm font-bold text-stone-900">{item.quantity}</span>
-                        <button 
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                          className="p-1 text-stone-400 hover:text-stone-900 transition-colors"
-                        >
-                          <Plus size={16} />
-                        </button>
+                        <p className="text-sm font-bold text-stone-900">
+                          Subtotal: ${(item.price * item.quantity).toFixed(2)}
+                        </p>
                       </div>
-                      <p className="text-sm font-bold text-stone-900">
-                        Subtotal: ${(item.price * item.quantity).toFixed(2)}
-                      </p>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
 
-            {/* Summary */}
-            <div className="lg:col-span-4">
-              <div className="bg-white rounded-[2rem] p-10 sticky top-24 border border-stone-100 shadow-sm">
-                <h2 className="text-2xl font-bold text-stone-900 mb-8 font-display uppercase tracking-tight">Order Summary</h2>
-                
-                {/* Coupon Input */}
-                <div className="mb-10">
-                  <label className="text-[11px] font-bold uppercase tracking-widest text-stone-400 block mb-3">Promo Code</label>
-                  <div className="flex gap-3">
-                    <input 
-                      type="text" 
-                      value={couponCode}
-                      onChange={(e) => setCouponCode(e.target.value)}
-                      placeholder="ENTER CODE"
-                      className="flex-1 px-6 py-3.5 bg-stone-50 border border-stone-100 rounded-full text-sm focus:ring-2 focus:ring-stone-900 outline-none text-stone-900 placeholder:text-stone-300 transition-all"
-                    />
-                    <button 
-                      onClick={handleApplyCoupon}
-                      disabled={isApplying || !couponCode.trim()}
-                      className="px-6 py-3.5 bg-stone-900 text-white rounded-full text-[11px] font-bold uppercase tracking-widest hover:bg-stone-800 transition-colors disabled:opacity-50"
-                    >
-                      {isApplying ? '...' : 'Apply'}
-                    </button>
-                  </div>
-                  {couponError && <p className="text-rose-500 text-[10px] mt-3 font-bold uppercase tracking-widest">{couponError}</p>}
-                  {appliedCoupon && (
-                    <div className="mt-3 flex items-center justify-between bg-stone-900 text-white px-4 py-2.5 rounded-full">
-                      <span className="text-[10px] font-bold uppercase tracking-widest">{appliedCoupon.code} Applied</span>
+              {/* Summary */}
+              <div className="lg:col-span-4">
+                <div className="bg-white rounded-[2rem] p-10 sticky top-24 border border-stone-100 shadow-sm">
+                  <h2 className="text-2xl font-bold text-stone-900 mb-8 font-display uppercase tracking-tight">Order Summary</h2>
+                  
+                  {/* Coupon Input */}
+                  <div className="mb-10">
+                    <label className="text-[11px] font-bold uppercase tracking-widest text-stone-400 block mb-3">Promo Code</label>
+                    <div className="flex gap-3">
+                      <input 
+                        type="text" 
+                        value={couponCode}
+                        onChange={(e) => setCouponCode(e.target.value)}
+                        placeholder="ENTER CODE"
+                        className="flex-1 px-6 py-3.5 bg-stone-50 border border-stone-100 rounded-full text-sm focus:ring-2 focus:ring-stone-900 outline-none text-stone-900 placeholder:text-stone-300 transition-all"
+                      />
                       <button 
-                        onClick={() => setAppliedCoupon(null)}
-                        className="text-white/60 hover:text-white"
+                        onClick={handleApplyCoupon}
+                        disabled={isApplying || !couponCode.trim()}
+                        className="px-6 py-3.5 bg-stone-900 text-white rounded-full text-[11px] font-bold uppercase tracking-widest hover:bg-stone-800 transition-colors disabled:opacity-50"
                       >
-                        <X size={14} />
+                        {isApplying ? '...' : 'Apply'}
                       </button>
                     </div>
-                  )}
-                </div>
+                    {couponError && <p className="text-rose-500 text-[10px] mt-3 font-bold uppercase tracking-widest">{couponError}</p>}
+                    {appliedCoupon && (
+                      <div className="mt-3 flex items-center justify-between bg-stone-900 text-white px-4 py-2.5 rounded-full">
+                        <span className="text-[10px] font-bold uppercase tracking-widest">{appliedCoupon.code} Applied</span>
+                        <button 
+                          onClick={() => setAppliedCoupon(null)}
+                          className="text-white/60 hover:text-white"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
 
-                <div className="space-y-5 mb-10">
-                  <div className="flex justify-between text-[11px] font-bold uppercase tracking-widest text-stone-400">
-                    <span>Subtotal ({totalItems} items)</span>
-                    <span className="text-stone-900">${totalPrice.toFixed(2)}</span>
-                  </div>
-                  {discount > 0 && (
-                    <div className="flex justify-between text-[11px] font-bold uppercase tracking-widest text-stone-900">
-                      <span>Discount ({appliedCoupon?.code})</span>
-                      <span className="text-rose-500">-${discount.toFixed(2)}</span>
+                  <div className="space-y-5 mb-10">
+                    <div className="flex justify-between text-[11px] font-bold uppercase tracking-widest text-stone-400">
+                      <span>Subtotal ({totalItems} items)</span>
+                      <span className="text-stone-900">${totalPrice.toFixed(2)}</span>
                     </div>
-                  )}
-                  <div className="flex justify-between text-[11px] font-bold uppercase tracking-widest text-stone-400">
-                    <span>Shipping</span>
-                    <span className="text-stone-900">Complimentary</span>
-                  </div>
-                  <div className="flex justify-between text-[11px] font-bold uppercase tracking-widest text-stone-400">
-                    <span>Tax</span>
-                    <span className="text-stone-900">$0.00</span>
-                  </div>
-                  <div className="pt-6 border-t border-stone-100 flex justify-between items-center">
-                    <span className="text-xl font-bold text-stone-900 font-display uppercase tracking-tight">Total</span>
-                    <div className="text-right">
-                      <span className="block text-3xl font-bold text-stone-900 tracking-tight">${finalTotal.toFixed(2)}</span>
-                      <span className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mt-1">{usdcToPc(finalTotal).toFixed(2)} $Pc</span>
+                    {discount > 0 && (
+                      <div className="flex justify-between text-[11px] font-bold uppercase tracking-widest text-stone-900">
+                        <span>Discount ({appliedCoupon?.code})</span>
+                        <span className="text-rose-500">-${discount.toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-[11px] font-bold uppercase tracking-widest text-stone-400">
+                      <span>Shipping</span>
+                      <span className="text-stone-900">Complimentary</span>
+                    </div>
+                    <div className="flex justify-between text-[11px] font-bold uppercase tracking-widest text-stone-400">
+                      <span>Tax</span>
+                      <span className="text-stone-900">$0.00</span>
+                    </div>
+                    <div className="pt-6 border-t border-stone-100 flex justify-between items-center">
+                      <span className="text-xl font-bold text-stone-900 font-display uppercase tracking-tight">Total</span>
+                      <div className="text-right">
+                        <span className="block text-3xl font-bold text-stone-900 tracking-tight">${finalTotal.toFixed(2)}</span>
+                        <span className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mt-1">{usdcToPc(finalTotal).toFixed(2)} $Pc</span>
+                      </div>
                     </div>
                   </div>
+                  <Link 
+                    href="/checkout"
+                    className="w-full flex items-center justify-center space-x-3 bg-stone-900 text-white py-6 rounded-full font-bold text-[11px] uppercase tracking-[0.2em] hover:bg-stone-800 transition-all shadow-xl active:scale-95"
+                  >
+                    <span>Proceed to Checkout</span>
+                    <ArrowRight size={16} />
+                  </Link>
+                  <p className="text-center text-[10px] text-stone-300 mt-8 uppercase tracking-[0.2em] font-bold">
+                    Secure Checkout • Hagenz Market
+                  </p>
                 </div>
-                <Link 
-                  href="/checkout"
-                  className="w-full flex items-center justify-center space-x-3 bg-stone-900 text-white py-6 rounded-full font-bold text-[11px] uppercase tracking-[0.2em] hover:bg-stone-800 transition-all shadow-xl active:scale-95"
-                >
-                  <span>Proceed to Checkout</span>
-                  <ArrowRight size={16} />
-                </Link>
-                <p className="text-center text-[10px] text-stone-300 mt-8 uppercase tracking-[0.2em] font-bold">
-                  Secure Checkout • Hagenz Market
-                </p>
               </div>
             </div>
-          </div>
-        )}
-      </div>
-    </main>
-  );
-}
+          )}
+
+          {/* Saved for Later Section */}
+          {savedItems.length > 0 && (
+            <div className="mt-24">
+              <h2 className="text-3xl font-light text-stone-900 mb-12 font-display italic">Saved for Later</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {savedItems.map((item) => (
+                  <div key={item.id} className="bg-white p-6 rounded-[2rem] border border-stone-100 shadow-sm group">
+                    <div className="relative aspect-square bg-stone-50 rounded-2xl overflow-hidden mb-6 border border-stone-50">
+                      <Image 
+                        src={item.image} 
+                        alt={item.name} 
+                        fill 
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                        referrerPolicy="no-referrer"
+                      />
+                    </div>
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-start">
+                        <h3 className="text-sm font-bold text-stone-900 uppercase tracking-tight">{item.name}</h3>
+                        <p className="text-sm font-black text-stone-900 font-mono">${item.price}</p>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <button 
+                          onClick={() => moveToCart(item.id)}
+                          className="flex-1 bg-stone-900 text-white py-3 rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-stone-800 transition-all"
+                        >
+                          Move to Cart
+                        </button>
+                        <button 
+                          onClick={() => removeFromSaved(item.id)}
+                          className="p-3 text-stone-300 hover:text-rose-500 transition-colors border border-stone-100 rounded-full"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </main>
+    );
+  }

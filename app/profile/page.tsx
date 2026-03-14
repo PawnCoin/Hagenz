@@ -6,14 +6,15 @@ import { useAuth } from '@/lib/auth-context';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { motion } from 'motion/react';
-import { Package, ChevronRight, ShoppingBag } from 'lucide-react';
+import { Package, ChevronRight, ShoppingBag, Trophy } from 'lucide-react';
 import Link from 'next/link';
+import LoyaltyDashboard from '@/components/LoyaltyDashboard';
 
 export default function ProfilePage() {
   const { user, profile, loading: authLoading, updateUserProfile } = useAuth();
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'orders' | 'settings' | 'addresses'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'settings' | 'addresses' | 'loyalty'>('orders');
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   
   // Addresses state
@@ -198,6 +199,12 @@ export default function ProfilePage() {
                   Delivery Nodes
                 </button>
                 <button 
+                  onClick={() => { setActiveTab('loyalty'); setSelectedOrder(null); }}
+                  className={`w-full text-left px-4 py-3 rounded-md font-bold text-[10px] uppercase tracking-[0.2em] transition-all font-mono ${activeTab === 'loyalty' ? 'bg-black text-white shadow-lg' : 'text-gray-500 hover:bg-gray-50'}`}
+                >
+                  Loyalty Rewards
+                </button>
+                <button 
                   onClick={() => { setActiveTab('settings'); setSelectedOrder(null); }}
                   className={`w-full text-left px-4 py-3 rounded-md font-bold text-[10px] uppercase tracking-[0.2em] transition-all font-mono ${activeTab === 'settings' ? 'bg-black text-white shadow-lg' : 'text-gray-500 hover:bg-gray-50'}`}
                 >
@@ -264,7 +271,17 @@ export default function ProfilePage() {
 
                   {/* Order Items */}
                   <div>
-                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-6 font-mono">Hardware Manifest</h3>
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-[10px] font-bold uppercase tracking-widest text-gray-400 font-mono">Hardware Manifest</h3>
+                      {selectedOrder.status === 'delivered' && (
+                        <Link 
+                          href={`/returns/new/${selectedOrder.id}`}
+                          className="text-[9px] font-bold text-indigo-600 hover:text-indigo-800 uppercase tracking-widest font-mono border border-indigo-100 px-3 py-1 rounded-full hover:bg-indigo-50 transition-all"
+                        >
+                          Request Return
+                        </Link>
+                      )}
+                    </div>
                     <div className="space-y-4">
                       {selectedOrder.items.map((item: any, i: number) => (
                         <div key={i} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
@@ -305,6 +322,8 @@ export default function ProfilePage() {
                     </div>
                   </div>
                 </div>
+              ) : activeTab === 'loyalty' ? (
+                <LoyaltyDashboard />
               ) : activeTab === 'orders' ? (
                 <>
                   <h2 className="text-2xl font-black font-display uppercase tracking-tight mb-8">Acquisition Logs</h2>

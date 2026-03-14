@@ -1,45 +1,50 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { db } from '@/firebase';
-import { collection, query, where, onSnapshot, addDoc, deleteDoc, doc, getDocs, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { db, auth } from '@/firebase';
+import { 
+  collection, 
+  query, 
+  where, 
+  onSnapshot, 
+  addDoc, 
+  deleteDoc, 
+  doc, 
+  serverTimestamp,
+  getDocs
+} from 'firebase/firestore';
 import { useAuth } from './auth-context';
 
 interface WishlistItem {
   id: string;
   productId: string;
   userId: string;
-  createdAt: Timestamp;
+  createdAt: any;
 }
 
 interface WishlistContextType {
   wishlist: WishlistItem[];
   isInWishlist: (productId: string) => boolean;
-  toggleWishlist: (productId: string) => Promise<void>;
+  toggleWishlist: (product: { id: string; name: string; price: number; image: string }) => Promise<void>;
   loading: boolean;
 }
 
 const WishlistContext = createContext<WishlistContextType | undefined>(undefined);
 
 export function WishlistProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
   const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
     if (!user) {
-      setTimeout(() => {
-        setWishlist([]);
-        setLoading(false);
-      }, 0);
+      setWishlist([]);
+      setLoading(false);
       return;
     }
 
-    const q = query(
-      collection(db, 'wishlist'),
-      where('userId', '==', user.uid)
-    );
-
+    const q = query(collection(db, 'wishlist'), where('userId', '==', user.uid));
+    
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const items = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -48,7 +53,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
       setWishlist(items);
       setLoading(false);
     }, (error) => {
-      console.error('Error fetching wishlist:', error);
+      console.error('Wishlist error:', error);
       setLoading(false);
     });
 
@@ -59,13 +64,13 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
     return wishlist.some(item => item.productId === productId);
   };
 
-  const toggleWishlist = async (productId: string) => {
+  const toggleWishlist = async (product: { id: string; name: string; price: number; image: string }) => {
     if (!user) {
-      // Handle unauthenticated user (e.g., redirect to login or show modal)
+      // Handle unauthenticated user - maybe redirect to login or show toast
       return;
     }
 
-    const existingItem = wishlist.find(item => item.productId === productId);
+    const existingItem = wishlist.find(item => item.productId === product.id);
 
     try {
       if (existingItem) {
@@ -73,7 +78,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
       } else {
         await addDoc(collection(db, 'wishlist'), {
           userId: user.uid,
-          productId,
+          productId: product.id,
           createdAt: serverTimestamp()
         });
       }

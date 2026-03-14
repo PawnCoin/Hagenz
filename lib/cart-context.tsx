@@ -13,9 +13,13 @@ export interface CartItem {
 
 interface CartContextType {
   items: CartItem[];
+  savedItems: CartItem[];
   addToCart: (product: any, selectedVariants?: { [key: string]: string }) => void;
   removeFromCart: (cartItemId: string) => void;
   updateQuantity: (cartItemId: string, quantity: number) => void;
+  saveForLater: (cartItemId: string) => void;
+  moveToCart: (cartItemId: string) => void;
+  removeFromSaved: (cartItemId: string) => void;
   clearCart: () => void;
   totalItems: number;
   totalPrice: number;
@@ -38,10 +42,29 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     return [];
   });
 
+  const [savedItems, setSavedItems] = useState<CartItem[]>(() => {
+    if (typeof window !== 'undefined') {
+      const savedForLater = localStorage.getItem('savedForLater');
+      if (savedForLater) {
+        try {
+          return JSON.parse(savedForLater);
+        } catch (e) {
+          console.error('Failed to parse saved items', e);
+        }
+      }
+    }
+    return [];
+  });
+
   // Save cart to localStorage on change
   useEffect(() => {
     localStorage.setItem('cart', JSON.stringify(items));
   }, [items]);
+
+  // Save saved items to localStorage on change
+  useEffect(() => {
+    localStorage.setItem('savedForLater', JSON.stringify(savedItems));
+  }, [savedItems]);
 
   const generateCartItemId = (productId: string, variants?: { [key: string]: string }) => {
     if (!variants || Object.keys(variants).length === 0) return productId;
@@ -86,6 +109,38 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     );
   };
 
+  const saveForLater = (cartItemId: string) => {
+    const itemToSave = items.find(item => item.id === cartItemId);
+    if (itemToSave) {
+      setItems(prev => prev.filter(item => item.id !== cartItemId));
+      setSavedItems(prev => {
+        const existing = prev.find(item => item.id === cartItemId);
+        if (existing) return prev;
+        return [...prev, itemToSave];
+      });
+    }
+  };
+
+  const moveToCart = (cartItemId: string) => {
+    const itemToMove = savedItems.find(item => item.id === cartItemId);
+    if (itemToMove) {
+      setSavedItems(prev => prev.filter(item => item.id !== cartItemId));
+      setItems(prev => {
+        const existing = prev.find(item => item.id === cartItemId);
+        if (existing) {
+          return prev.map(item => 
+            item.id === cartItemId ? { ...item, quantity: item.quantity + 1 } : item
+          );
+        }
+        return [...prev, itemToMove];
+      });
+    }
+  };
+
+  const removeFromSaved = (cartItemId: string) => {
+    setSavedItems(prev => prev.filter(item => item.id !== cartItemId));
+  };
+
   const clearCart = () => setItems([]);
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
@@ -95,9 +150,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     <CartContext.Provider
       value={{
         items,
+        savedItems,
         addToCart,
         removeFromCart,
         updateQuantity,
+        saveForLater,
+        moveToCart,
+        removeFromSaved,
         clearCart,
         totalItems,
         totalPrice,

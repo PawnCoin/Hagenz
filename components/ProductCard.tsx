@@ -114,7 +114,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         </div>
       </div>
       <QuickView 
-        productId={product.id} 
+        product={product} 
         isOpen={isQuickViewOpen} 
         onClose={() => setIsQuickViewOpen(false)} 
       />

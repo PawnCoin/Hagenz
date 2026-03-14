@@ -16,7 +16,8 @@ import {
   Menu,
   X,
   Tag,
-  ChevronRight
+  ChevronRight,
+  LifeBuoy
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -25,6 +26,8 @@ const sidebarItems = [
   { name: 'Products', href: '/admin/products', icon: Package },
   { name: 'Orders', href: '/admin/orders', icon: ShoppingBag },
   { name: 'Customers', href: '/admin/customers', icon: Users },
+  { name: 'Tickets', href: '/admin/tickets', icon: LifeBuoy },
+  { name: 'Returns', href: '/admin/returns', icon: Package },
   { name: 'Coupons', href: '/admin/coupons', icon: Tag },
   { name: 'Settings', href: '/admin/settings', icon: Settings },
 ];

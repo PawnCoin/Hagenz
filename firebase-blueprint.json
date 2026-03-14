@@ -58,6 +58,9 @@
           }
         },
         "total": { "type": "number", "description": "The total order amount." },
+        "tax": { "type": "number", "description": "The calculated tax for the order." },
+        "shippingCost": { "type": "number", "description": "The shipping cost for the order." },
+        "notes": { "type": "string", "description": "Optional customer notes for the order." },
         "status": { "type": "string", "enum": ["pending", "processing", "shipped", "delivered"], "description": "The current status of the order." },
         "shippingAddress": {
           "type": "object",
@@ -82,6 +85,9 @@
         "name": { "type": "string" },
         "email": { "type": "string", "format": "email" },
         "role": { "type": "string", "enum": ["admin", "customer"] },
+        "loyaltyTier": { "type": "string", "enum": ["Bronze", "Silver", "Gold", "Platinum"], "description": "The user's loyalty tier based on $Pc holdings." },
+        "pcBalance": { "type": "number", "description": "The user's current $Pc balance." },
+        "walletAddress": { "type": "string", "description": "The user's verified wallet address." },
         "savedAddresses": {
           "type": "array",
           "items": {
@@ -139,6 +145,93 @@
         "isActive": { "type": "boolean" }
       },
       "required": ["code", "type", "value"]
+    },
+    "SupportTicket": {
+      "title": "SupportTicket",
+      "description": "A customer support request.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "subject": { "type": "string" },
+        "message": { "type": "string" },
+        "status": { "type": "string", "enum": ["open", "in-progress", "closed"] },
+        "priority": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+        "category": { "type": "string", "enum": ["order", "payment", "technical", "other"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "responses": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "senderId": { "type": "string" },
+              "senderName": { "type": "string" },
+              "message": { "type": "string" },
+              "createdAt": { "type": "string", "format": "date-time" },
+              "isAdmin": { "type": "boolean" }
+            }
+          }
+        }
+      },
+      "required": ["userId", "subject", "message", "status", "priority", "category", "createdAt"]
+    },
+    "ReturnRequest": {
+      "title": "ReturnRequest",
+      "description": "A request to return a product from an order.",
+      "type": "object",
+      "properties": {
+        "orderId": { "type": "string" },
+        "userId": { "type": "string" },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "productId": { "type": "string" },
+              "name": { "type": "string" },
+              "quantity": { "type": "integer" }
+            }
+          }
+        },
+        "reason": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected", "completed"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["orderId", "userId", "items", "reason", "status", "createdAt"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "A notification for a user.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "type": { "type": "string", "enum": ["order", "ticket", "system", "reward"] },
+        "link": { "type": "string" },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "message", "type", "read", "createdAt"]
+    },
+    "GiftCard": {
+      "title": "GiftCard",
+      "description": "A digital gift card with a balance.",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string", "description": "The unique gift card code." },
+        "initialBalance": { "type": "number", "description": "The original value of the gift card." },
+        "currentBalance": { "type": "number", "description": "The remaining balance." },
+        "userId": { "type": "string", "description": "The ID of the user who purchased it." },
+        "recipientEmail": { "type": "string", "description": "Optional recipient email." },
+        "isActive": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "expiryDate": { "type": "string", "format": "date-time" }
+      },
+      "required": ["code", "initialBalance", "currentBalance", "isActive", "createdAt"]
     }
   },
   "firestore": {
@@ -165,6 +258,22 @@
     "/coupons/{couponId}": {
       "schema": "Coupon",
       "description": "Collection of store coupons."
+    },
+    "/tickets/{ticketId}": {
+      "schema": "SupportTicket",
+      "description": "Collection of customer support tickets."
+    },
+    "/returns/{returnId}": {
+      "schema": "ReturnRequest",
+      "description": "Collection of product return requests."
+    },
+    "/notifications/{notificationId}": {
+      "schema": "Notification",
+      "description": "Collection of user notifications."
+    },
+    "/giftcards/{giftcardId}": {
+      "schema": "GiftCard",
+      "description": "Collection of digital gift cards."
     }
   }
 }

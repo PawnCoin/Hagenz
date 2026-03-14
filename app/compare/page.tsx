@@ -13,13 +13,22 @@ export default function ComparePage() {
   const { compareItems, removeFromCompare, clearCompare } = useCompare();
   const { addToCart } = useCart();
 
+  const allSpecLabels = Array.from(new Set(
+    compareItems.flatMap(item => 
+      (item.specifications as any)?.map((s: any) => s.label) || []
+    )
+  ));
+
   const specs = [
     { label: 'Price', key: 'price', format: (v: any) => `$${v}` },
     { label: 'Category', key: 'category' },
-    { label: 'Description', key: 'description' },
-    { label: 'Manufacturer', value: 'PAWN TECH LABS' },
-    { label: 'Material', value: 'Aerospace Grade Alloy' },
-    { label: 'Warranty', value: 'Lifetime Support' }
+    ...allSpecLabels.map(label => ({
+      label,
+      getValue: (item: any) => {
+        const spec = (item.specifications as any)?.find((s: any) => s.label === label);
+        return spec ? spec.value : '—';
+      }
+    }))
   ];
 
   if (compareItems.length === 0) {
@@ -116,7 +125,9 @@ export default function ComparePage() {
                   </td>
                   {compareItems.map((item) => (
                     <td key={item.id} className="p-6 text-xs text-gray-600 leading-relaxed font-mono uppercase">
-                      {spec.value || (spec.format ? spec.format(item[spec.key!]) : item[spec.key!])}
+                      {(spec as any).getValue 
+                        ? (spec as any).getValue(item) 
+                        : (spec as any).value || (spec.format ? spec.format(item[spec.key!]) : item[spec.key!])}
                     </td>
                   ))}
                   {[...Array(Math.max(0, 4 - compareItems.length))].map((_, i) => (

@@ -44,10 +44,10 @@ export default function Footer() {
           <div>
             <h4 className="text-[11px] font-bold uppercase tracking-[0.2em] text-stone-500 mb-6">Support</h4>
             <ul className="space-y-4">
-              <li><Link href="/contact" className="text-sm font-medium text-stone-400 hover:text-white transition-colors">Contact Us</Link></li>
-              <li><Link href="/faq" className="text-sm font-medium text-stone-400 hover:text-white transition-colors">FAQ</Link></li>
-              <li><Link href="/legal/shipping" className="text-sm font-medium text-stone-400 hover:text-white transition-colors">Shipping</Link></li>
-              <li><Link href="/legal/returns" className="text-sm font-medium text-stone-400 hover:text-white transition-colors">Returns</Link></li>
+              <li><Link href="/support" className="text-sm font-medium text-stone-400 hover:text-white transition-colors">Support Center</Link></li>
+              <li><Link href="/warranty" className="text-sm font-medium text-stone-400 hover:text-white transition-colors">Warranty Policy</Link></li>
+              <li><Link href="/cookies" className="text-sm font-medium text-stone-400 hover:text-white transition-colors">Cookie Policy</Link></li>
+              <li><Link href="/gift-cards" className="text-sm font-medium text-stone-400 hover:text-white transition-colors">Gift Cards</Link></li>
             </ul>
           </div>
 
@@ -77,8 +77,9 @@ export default function Footer() {
             © {new Date().getFullYear()} HAGENZ MARKET. ALL RIGHTS RESERVED.
           </p>
           <div className="flex space-x-6">
-            <Link href="/legal/privacy" className="text-[11px] text-stone-500 hover:text-white transition-colors uppercase tracking-widest">Privacy</Link>
-            <Link href="/legal/terms" className="text-[11px] text-stone-500 hover:text-white transition-colors uppercase tracking-widest">Terms</Link>
+            <Link href="/warranty" className="text-[11px] text-stone-500 hover:text-white transition-colors uppercase tracking-widest">Warranty</Link>
+            <Link href="/cookies" className="text-[11px] text-stone-500 hover:text-white transition-colors uppercase tracking-widest">Cookies</Link>
+            <Link href="/support" className="text-[11px] text-stone-500 hover:text-white transition-colors uppercase tracking-widest">Support</Link>
           </div>
         </div>
       </div>

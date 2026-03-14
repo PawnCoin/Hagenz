@@ -7,10 +7,11 @@ import { useCart } from '@/lib/cart-context';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { motion } from 'motion/react';
-import { ShoppingBag, Star, Shield, Truck, RotateCcw, Plus, Heart, Coins } from 'lucide-react';
+import { ShoppingBag, Star, Shield, Truck, RotateCcw, Plus, Heart, Coins, BarChart2 } from 'lucide-react';
 import Image from 'next/image';
 import ReviewSection from '@/components/ReviewSection';
 import { useWishlist } from '@/lib/wishlist-context';
+import { useCompare } from '@/lib/compare-context';
 
 export default function ProductDetailPage() {
   const { id } = useParams();
@@ -18,9 +19,11 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedVariants, setSelectedVariants] = useState<{ [key: string]: string }>({});
-  const { addToCart } = useCart();
+  const { items, addToCart } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
+  const { addToCompare, isInCompare, removeFromCompare } = useCompare();
   const isWishlisted = isInWishlist(id as string);
+  const isComparing = isInCompare(id as string);
 
   useEffect(() => {
     async function fetchProduct() {
@@ -225,6 +228,14 @@ export default function ProductDetailPage() {
                     }`}
                   >
                     <Heart size={28} fill={isWishlisted ? "currentColor" : "none"} />
+                  </button>
+                  <button 
+                    onClick={() => isComparing ? removeFromCompare(product.id) : addToCompare(product)}
+                    className={`w-20 h-20 rounded-full border-2 flex items-center justify-center transition-all ${
+                      isComparing ? 'bg-stone-900 border-stone-900 text-white shadow-lg' : 'bg-white border-stone-100 text-stone-900 hover:border-stone-900'
+                    }`}
+                  >
+                    <BarChart2 size={28} />
                   </button>
                 </div>
                 <button 

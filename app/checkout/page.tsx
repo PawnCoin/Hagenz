@@ -7,7 +7,7 @@ import * as z from 'zod';
 import Navbar from '@/components/Navbar';
 import { useCart } from '@/lib/cart-context';
 import { useAuth } from '@/lib/auth-context';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { CheckCircle2, Loader2, ArrowLeft, Wallet, Coins, Shield, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
@@ -22,6 +22,7 @@ const checkoutSchema = z.object({
   city: z.string().min(2, 'City is required'),
   zipCode: z.string().min(5, 'Zip code is required'),
   country: z.string().min(2, 'Country is required'),
+  notes: z.string().optional(),
 });
 
 type CheckoutFormData = z.infer<typeof checkoutSchema>;
@@ -33,6 +34,11 @@ export default function CheckoutPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [orderId, setOrderId] = useState('');
+  const [giftCardCode, setGiftCardCode] = useState('');
+  const [giftCardDiscount, setGiftCardDiscount] = useState(0);
+  const [isApplyingGiftCard, setIsApplyingGiftCard] = useState(false);
+  const [giftCardError, setGiftCardError] = useState('');
+  const [appliedGiftCard, setAppliedGiftCard] = useState<any>(null);
 
   const { register, handleSubmit, setValue, formState: { errors, isValid }, watch } = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutSchema),
@@ -46,12 +52,73 @@ export default function CheckoutPage() {
   const { profile, updateUserProfile } = useAuth();
   const [saveAddress, setSaveAddress] = useState(false);
 
+  // Logistics Calculations
+  const taxRate = 0.08; // 8% tax
+  
+  // Loyalty Discount
+  const getLoyaltyDiscountRate = (tier: string) => {
+    switch (tier) {
+      case 'Silver': return 0.05;
+      case 'Gold': return 0.10;
+      case 'Platinum': return 0.15;
+      default: return 0;
+    }
+  };
+
+  const loyaltyDiscountRate = getLoyaltyDiscountRate(profile?.loyaltyTier || 'Bronze');
+  const loyaltyDiscountAmount = totalPrice * loyaltyDiscountRate;
+  const discountedSubtotal = totalPrice - loyaltyDiscountAmount;
+
+  const taxAmount = discountedSubtotal * taxRate;
+  const shippingThreshold = 200;
+  const flatShippingRate = 15;
+  const shippingCost = discountedSubtotal >= shippingThreshold ? 0 : flatShippingRate;
+  const finalTotal = discountedSubtotal + taxAmount + shippingCost;
+
   const handleSelectAddress = (address: any) => {
     setValue('fullName', address.fullName, { shouldValidate: true });
     setValue('address', address.address, { shouldValidate: true });
     setValue('city', address.city, { shouldValidate: true });
     setValue('zipCode', address.zipCode, { shouldValidate: true });
     setValue('country', address.country, { shouldValidate: true });
+  };
+
+  const handleApplyGiftCard = async () => {
+    if (!giftCardCode) return;
+    setIsApplyingGiftCard(true);
+    setGiftCardError('');
+    
+    try {
+      const q = query(collection(db, 'giftcards'), where('code', '==', giftCardCode.replace(/-/g, '').toUpperCase()));
+      const querySnapshot = await getDocs(q);
+      
+      if (querySnapshot.empty) {
+        setGiftCardError('Invalid gift card code.');
+        return;
+      }
+
+      const gcDoc = querySnapshot.docs[0];
+      const gcData = gcDoc.data();
+
+      if (!gcData.isActive) {
+        setGiftCardError('This gift card is inactive.');
+        return;
+      }
+
+      if (gcData.currentBalance <= 0) {
+        setGiftCardError('This gift card has no remaining balance.');
+        return;
+      }
+
+      const discount = Math.min(gcData.currentBalance, totalPrice - loyaltyDiscountAmount);
+      setGiftCardDiscount(discount);
+      setAppliedGiftCard({ id: gcDoc.id, ...gcData, appliedAmount: discount });
+    } catch (error) {
+      console.error('Error applying gift card:', error);
+      setGiftCardError('Failed to apply gift card.');
+    } finally {
+      setIsApplyingGiftCard(false);
+    }
   };
 
   const onPaymentSuccess = async () => {
@@ -75,31 +142,47 @@ export default function CheckoutPage() {
           await updateUserProfile({ savedAddresses: updatedAddresses });
         }
 
-        const orderData = {
-          userId: user?.uid || 'anonymous',
-          walletAddress,
-          items: items.map(item => ({
-            productId: item.id,
-            name: item.name,
-            price: item.price,
-            quantity: item.quantity
-          })),
-          total: totalPrice,
-          totalPc: usdcToPc(totalPrice),
-          status: 'paid',
-          paymentMethod: 'PcPay',
-          shippingAddress: {
-            fullName: data.fullName,
-            address: data.address,
-            city: data.city,
-            zipCode: data.zipCode,
-            country: data.country
-          },
-          createdAt: serverTimestamp()
-        };
+          const orderData = {
+            userId: user?.uid || 'anonymous',
+            walletAddress,
+            items: items.map(item => ({
+              productId: item.id,
+              name: item.name,
+              price: item.price,
+              quantity: item.quantity
+            })),
+            subtotal: totalPrice,
+            loyaltyDiscount: loyaltyDiscountAmount,
+            giftCardDiscount: giftCardDiscount,
+            giftCardId: appliedGiftCard?.id || null,
+            tax: taxAmount,
+            shippingCost: shippingCost,
+            total: finalTotal,
+            totalPc: usdcToPc(finalTotal),
+            notes: data.notes || '',
+            status: 'paid',
+            paymentMethod: 'PcPay',
+            shippingAddress: {
+              fullName: data.fullName,
+              address: data.address,
+              city: data.city,
+              zipCode: data.zipCode,
+              country: data.country
+            },
+            createdAt: serverTimestamp()
+          };
 
-        const docRef = await addDoc(collection(db, 'orders'), orderData);
-        setOrderId(docRef.id);
+          const docRef = await addDoc(collection(db, 'orders'), orderData);
+          
+          // Update gift card balance if used
+          if (appliedGiftCard) {
+            const gcRef = doc(db, 'giftcards', appliedGiftCard.id);
+            await updateDoc(gcRef, {
+              currentBalance: appliedGiftCard.currentBalance - appliedGiftCard.appliedAmount
+            });
+          }
+
+          setOrderId(docRef.id);
         setIsSuccess(true);
         clearCart();
       } catch (error) {
@@ -244,6 +327,20 @@ export default function CheckoutPage() {
               </div>
             </div>
 
+            {/* Order Notes */}
+            <div className="bg-white rounded-[2rem] p-10 shadow-sm border border-stone-100">
+              <h2 className="text-2xl font-bold text-stone-900 mb-8 font-display uppercase tracking-tight">Order Notes</h2>
+              <div className="space-y-3">
+                <label className="text-[11px] font-bold uppercase tracking-widest text-stone-400">Additional Instructions (Optional)</label>
+                <textarea 
+                  {...register('notes')}
+                  placeholder="Special delivery instructions, gift messages, etc."
+                  rows={4}
+                  className="w-full px-6 py-4 rounded-3xl border-2 border-stone-50 bg-stone-50 focus:outline-none focus:border-stone-900 text-stone-900 text-sm transition-all resize-none"
+                />
+              </div>
+            </div>
+
             {/* Payment Info */}
             <div className="bg-stone-900 text-white rounded-[2rem] p-10 shadow-2xl">
               <div className="flex items-center justify-between mb-8">
@@ -303,21 +400,77 @@ export default function CheckoutPage() {
                   <span>Subtotal</span>
                   <span className="text-stone-900">${totalPrice.toFixed(2)}</span>
                 </div>
+                {loyaltyDiscountAmount > 0 && (
+                  <div className="flex justify-between text-[11px] font-bold uppercase tracking-widest text-emerald-600">
+                    <span>Loyalty Discount ({profile?.loyaltyTier})</span>
+                    <span>-${loyaltyDiscountAmount.toFixed(2)}</span>
+                  </div>
+                )}
+                {giftCardDiscount > 0 && (
+                  <div className="flex justify-between text-[11px] font-bold uppercase tracking-widest text-emerald-600">
+                    <span>Gift Card</span>
+                    <span>-${giftCardDiscount.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-[11px] font-bold uppercase tracking-widest text-stone-400">
+                  <span>Tax (8%)</span>
+                  <span className="text-stone-900">${taxAmount.toFixed(2)}</span>
+                </div>
                 <div className="flex justify-between text-[11px] font-bold uppercase tracking-widest text-stone-400">
                   <span>Shipping</span>
-                  <span className="text-stone-900">Complimentary</span>
+                  <span className={shippingCost === 0 ? "text-emerald-600" : "text-stone-900"}>
+                    {shippingCost === 0 ? 'Complimentary' : `$${shippingCost.toFixed(2)}`}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center pt-6 border-t border-stone-100">
                   <span className="text-xl font-bold text-stone-900 font-display uppercase tracking-tight">Total</span>
                   <div className="text-right">
-                    <span className="block text-3xl font-bold text-stone-900 tracking-tight">${totalPrice.toFixed(2)}</span>
-                    <span className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mt-1">{usdcToPc(totalPrice).toFixed(2)} $Pc</span>
+                    <span className="block text-3xl font-bold text-stone-900 tracking-tight">${finalTotal.toFixed(2)}</span>
+                    <span className="block text-[10px] font-bold text-stone-400 uppercase tracking-widest mt-1">{usdcToPc(finalTotal).toFixed(2)} $Pc</span>
                   </div>
                 </div>
               </div>
+
+              {/* Gift Card Redemption */}
+              <div className="mb-8 p-6 bg-stone-50 rounded-3xl border border-stone-100">
+                <h3 className="text-[10px] font-bold uppercase tracking-widest text-stone-400 mb-4">Gift Card</h3>
+                <div className="flex space-x-2">
+                  <input 
+                    type="text"
+                    placeholder="XXXX-XXXX-XXXX-XXXX"
+                    value={giftCardCode}
+                    onChange={(e) => setGiftCardCode(e.target.value)}
+                    className="flex-grow bg-white border border-stone-200 rounded-full px-4 py-2 text-xs focus:outline-none focus:border-stone-900 transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleApplyGiftCard}
+                    disabled={isApplyingGiftCard || !giftCardCode}
+                    className="bg-stone-900 text-white px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-stone-800 transition-all disabled:opacity-50"
+                  >
+                    {isApplyingGiftCard ? <Loader2 size={12} className="animate-spin" /> : 'Apply'}
+                  </button>
+                </div>
+                {giftCardError && <p className="text-[9px] text-rose-500 font-bold uppercase tracking-widest mt-2 ml-2">{giftCardError}</p>}
+                {appliedGiftCard && (
+                  <div className="mt-3 flex items-center justify-between bg-emerald-50 px-3 py-2 rounded-xl border border-emerald-100">
+                    <span className="text-[9px] font-bold text-emerald-700 uppercase tracking-widest">Applied: ${giftCardDiscount.toFixed(2)}</span>
+                    <button 
+                      onClick={() => {
+                        setAppliedGiftCard(null);
+                        setGiftCardDiscount(0);
+                        setGiftCardCode('');
+                      }}
+                      className="text-[9px] font-bold text-emerald-700 uppercase tracking-widest hover:underline"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                )}
+              </div>
               
               <PcPayButton 
-                amount={totalPrice} 
+                amount={finalTotal} 
                 onSuccess={onPaymentSuccess} 
                 disabled={!isValid || isSubmitting}
               />

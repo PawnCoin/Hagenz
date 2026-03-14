@@ -2,9 +2,20 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+  image: string;
+  category: string;
+  specifications?: { [key: string]: string };
+  brand?: string;
+  stock?: number;
+}
+
 interface CompareContextType {
-  compareItems: any[];
-  addToCompare: (product: any) => void;
+  compareItems: Product[];
+  addToCompare: (product: Product) => void;
   removeFromCompare: (productId: string) => void;
   clearCompare: () => void;
   isInCompare: (productId: string) => boolean;
@@ -13,36 +24,36 @@ interface CompareContextType {
 const CompareContext = createContext<CompareContextType | undefined>(undefined);
 
 export function CompareProvider({ children }: { children: React.ReactNode }) {
-  const [compareItems, setCompareItems] = useState<any[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('compare');
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch (e) {
-          console.error('Error parsing compare items:', e);
-        }
-      }
-    }
-    return [];
-  });
+  const [compareItems, setCompareItems] = useState<Product[]>([]);
 
   useEffect(() => {
-    localStorage.setItem('compare', JSON.stringify(compareItems));
+    const saved = localStorage.getItem('compare_items');
+    if (saved) {
+      try {
+        setCompareItems(JSON.parse(saved));
+      } catch (e) {
+        console.error('Failed to parse compare items', e);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('compare_items', JSON.stringify(compareItems));
   }, [compareItems]);
 
-  const addToCompare = (product: any) => {
-    if (compareItems.length >= 4) {
-      alert('You can only compare up to 4 products at a time.');
-      return;
-    }
-    if (!compareItems.find(item => item.id === product.id)) {
-      setCompareItems([...compareItems, product]);
-    }
+  const addToCompare = (product: Product) => {
+    setCompareItems((prev) => {
+      if (prev.find((item) => item.id === product.id)) return prev;
+      if (prev.length >= 4) {
+        alert('You can only compare up to 4 products at a time.');
+        return prev;
+      }
+      return [...prev, product];
+    });
   };
 
   const removeFromCompare = (productId: string) => {
-    setCompareItems(compareItems.filter(item => item.id !== productId));
+    setCompareItems((prev) => prev.filter((item) => item.id !== productId));
   };
 
   const clearCompare = () => {
@@ -50,7 +61,7 @@ export function CompareProvider({ children }: { children: React.ReactNode }) {
   };
 
   const isInCompare = (productId: string) => {
-    return compareItems.some(item => item.id === productId);
+    return compareItems.some((item) => item.id === productId);
   };
 
   return (

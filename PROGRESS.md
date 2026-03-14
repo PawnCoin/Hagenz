@@ -37,7 +37,7 @@ This document tracks the development progress of the Luster Store e-commerce pla
 - [x] **Add to Cart**: Functional cart integration.
 - [x] **Buy Now**: Direct checkout from product page.
 - [x] **Wishlist**: Save items for later.
-- [ ] **Compare Product**: Side-by-side comparison tool.
+- [x] **Compare Product**: Side-by-side comparison tool.
 - [x] **Estimated Delivery**: Shipping time estimates.
 - [ ] **Financing Options**: Monthly payment info.
 - [x] **Warranty Options**: Protection plans.
@@ -50,12 +50,12 @@ This document tracks the development progress of the Luster Store e-commerce pla
 - [ ] **Payment Methods**: Save cards for faster checkout.
 - [x] **Order History**: List of past purchases.
 - [x] **Track Orders**: Real-time status tracking.
-- [x] **Returns / Refunds**: Request system for orders (Policy pages added).
+- [x] **Returns / Refunds**: Request system for orders.
 - [x] **Wishlist**: Personal saved items list.
-- [ ] **Notifications**: Order updates and promos.
-- [ ] **Support Tickets**: Customer service portal.
-- [ ] **Loyalty Rewards**: Points and credits system.
-- [ ] **Store Credits / Wallet**: Balance management.
+- [x] **Notifications**: Order updates and promos.
+- [x] **Support Tickets**: Customer service portal.
+- [x] **Loyalty Rewards**: Points and credits system.
+- [x] **Store Credits / Wallet**: Balance management.
 
 ## 💳 Checkout Pages
 - [x] **Cart Page**: Review items before purchase.
@@ -64,7 +64,8 @@ This document tracks the development progress of the Luster Store e-commerce pla
 - [x] **Payment Method**: Basic card input.
 - [x] **Order Summary**: Real-time total calculation.
 - [x] **Discount Codes**: Coupon application logic.
-- [ ] **Taxes & Shipping Calculation**: Dynamic cost calculation.
+- [x] **Taxes & Shipping Calculation**: Dynamic cost calculation.
+- [x] **Order Notes**: Customer instructions during checkout.
 - [x] **Place Order**: Final transaction processing.
 - [x] **Confirmation Page**: Success feedback.
 
@@ -73,8 +74,8 @@ This document tracks the development progress of the Luster Store e-commerce pla
 - [x] **Inventory**: Basic stock level tracking.
 - [x] **Product Variants & Categories**: Structural management.
 - [x] **Orders List & Details**: Status management.
-- [ ] **Shipping Management**: Label printing and tracking.
-- [ ] **Refund Requests**: Processing returns.
+- [x] **Shipping Management**: Label printing and tracking.
+- [x] **Refund Requests**: Processing returns.
 - [x] **Customer Database**: Profiles and history.
 - [x] **Finance Dashboard**: Basic revenue stats.
 - [x] **Marketing Tools**: Campaigns, coupons, loyalty.
@@ -84,7 +85,7 @@ This document tracks the development progress of the Luster Store e-commerce pla
 - [x] **Buy Now**: Instant checkout.
 - [ ] **Save for Later**: Move from cart to wishlist.
 - [x] **Wishlist**: Save for future purchase.
-- [ ] **Product Comparison**: Compare specs.
+- [x] **Product Comparison**: Compare specs.
 - [ ] **Quick View Popup**: Fast preview.
 - [x] **Search**: Smart search, autocomplete, voice search.
 - [x] **Filters**: Price, Brand, Storage size, Color, Rating, Availability, Release date.
@@ -99,9 +100,9 @@ This document tracks the development progress of the Luster Store e-commerce pla
 
 ## 💬 Customer Support Features
 - [x] **Live Chat / AI Chatbot**: Real-time assistance (AI Assistant).
-- [ ] **Support Ticket System**: Async help.
-- [x] **Help Center / FAQ Page**: Self-service (Legal pages added).
-- [ ] **Return Request System**: Automated returns.
+- [x] **Support Ticket System**: Async help.
+- [x] **Help Center / FAQ Page**: Self-service.
+- [x] **Return Request System**: Automated returns.
 
 ## 📢 Marketing Tools
 - [ ] **Email/SMS Marketing**: Campaigns and notifications.
@@ -111,7 +112,7 @@ This document tracks the development progress of the Luster Store e-commerce pla
 - [ ] **Flash Sales / Countdown Deals**: Urgency tools.
 
 ## 📈 Analytics Tools
-- [ ] **Sales & Customer Analytics**: Behavior tracking.
+- [x] **Sales & Customer Analytics**: Behavior tracking.
 - [ ] **Conversion Tracking**: Funnel analysis.
 - [ ] **Heatmaps**: Visual interaction data.
 
@@ -147,8 +148,8 @@ This document tracks the development progress of the Luster Store e-commerce pla
 - [x] **Terms of Service**: User agreement.
 - [x] **Refund Policy**: Return terms.
 - [x] **Shipping Policy**: Delivery terms.
-- [ ] **Warranty Policy**: Product protection.
-- [ ] **Cookie Policy**: Tracking disclosure.
+- [x] **Warranty Policy**: Product protection.
+- [x] **Cookie Policy**: Tracking disclosure.
 
 ## ⚡ Elite Features (Future Roadmap)
 - [x] **AI Shopping Assistant**: Conversational commerce.
